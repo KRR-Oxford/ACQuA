@@ -16,6 +16,9 @@
 
 package uk.ac.ox.cs.acqua.reasoner
 
+import java.util.Collection;
+import scala.collection.JavaConverters._
+
 import org.semanticweb.owlapi.model.OWLOntology
 import uk.ac.ox.cs.rsacomb.RSAOntology
 import uk.ac.ox.cs.rsacomb.approximation.{Approximation,Lowerbound}
@@ -67,12 +70,33 @@ class RSAQueryReasoner(val origin: Ontology) extends QueryReasoner {
     origin.isRSA
   }
 
-  // TODO: probably need to override `evaluate` on multiple queries
-  def evaluate(query: QueryRecord): Unit = {
-    rsa ask query
+  /** Evaluates a collection of queries.
+    *
+    * Uses RSAComb internally to reuse part of the computation of
+    * multiple calls to [[uk.ac.ox.cs.rsacomb.RSAOntology.ask]].
+    *
+    * TODO: perform logging of answers
+    */
+  override def evaluate(queries: Collection[QueryRecord]): Unit = {
+    val answers = rsa ask queries
+    /* Perform logging */
+    // Logger write answers
+    // Logger.generateSimulationScripts(datapath, queries)
   }
 
-  def evaluateUpper(record: QueryRecord): Unit= {
-    ???
+  /** Evaluates a single query.
+    *
+    * Uses RSAComb internally to reuse part of the computation of
+    * multiple calls to [[uk.ac.ox.cs.rsacomb.RSAOntology.ask]].
+    *
+    * TODO: perform logging of answers
+    */
+  def evaluate(query: QueryRecord): Unit = {
+    val answers = rsa ask query
+    /* Perform logging */
+    // Logger write answers
+    // Logger.generateSimulationScripts(datapath, queries)
   }
+
+  def evaluateUpper(record: QueryRecord): Unit= ???
 }

@@ -16,14 +16,22 @@
 
 package uk.ac.ox.cs.acqua.implicits
 
+import java.util.Collection
+import scala.collection.JavaConverters._
+
 import uk.ac.ox.cs.rsacomb.sparql.ConjunctiveQuery
+import uk.ac.ox.cs.rsacomb.util.RSA
 import uk.ac.ox.cs.pagoda.query.QueryRecord
 
 object PagodaConverters {
 
-  implicit def queryRecord2conjuctiveQuery(q: QueryRecord): ConjunctiveQuery = ???
+  implicit def queryRecord2conjuctiveQuery(q: QueryRecord): ConjunctiveQuery = {
+    // TODO: check whether `q.id` is correct
+    ConjunctiveQuery.parse(q.id,q.getQueryText(),RSA.Prefixes).get
+  }
 
-  implicit def conjunctiveQuery2queryRecord(q: ConjunctiveQuery): QueryRecord = ???
+  implicit def queryRecords2conjuctiveQueries(qs: Collection[QueryRecord]): List[ConjunctiveQuery] =
+    qs.asScala.map(queryRecord2conjuctiveQuery).toList
 
 }
 

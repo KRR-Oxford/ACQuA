@@ -57,29 +57,20 @@ object Acqua extends App {
   reasoner.loadOntology(ontology.origin)
   reasoner.importData(properties.getDataPath())
   if (reasoner.preprocess()) {
-      Utility.logInfo("The ontology is consistent!");
+      Utility logInfo "The ontology is consistent!"
   }
   else {
-      Utility.logInfo("The ontology is inconsistent!");
+      Utility logInfo "The ontology is inconsistent!"
       reasoner.dispose();
+      // Exit somehow
   }
 
   if (config contains 'queries) {
-    val queries =
-      RDFoxUtil.loadQueriesFromFiles(
-        config('queries).get[List[os.Path]],
-        RSA.Prefixes
-      )
-  //     for(String queryFile : properties.getQueryPath().split(";")) {
-  //         Collection<QueryRecord> queryRecords = pagoda.getQueryManager().collectQueryRecords(queryFile);
-  //         pagoda.evaluate(queryRecords);
+    val queryManager = reasoner.getQueryManager()
+    config('queries).get[List[os.Path]].map(path => {
+      val queries = queryManager collectQueryRecords path.toString
+      reasoner evaluate queries
+    })
   }
 }
 
-
-    // /* Perform query answering */
-    // val answers = rsa ask queries
-
-    // /* Perform logging */
-    // Logger write answers
-    // Logger.generateSimulationScripts(datapath, queries)
