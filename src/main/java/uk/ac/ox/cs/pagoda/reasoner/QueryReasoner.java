@@ -82,6 +82,11 @@ public abstract class QueryReasoner extends Disposable {
         return new HermiTReasoner(toCheckSatisfiability);
     }
 
+    public void setProperties(PagodaProperties p) {
+        if(isDisposed()) throw new DisposedException();
+        properties = p;
+    }
+
     public void setToClassify(boolean flag) {
         if(isDisposed()) throw new DisposedException();
         properties.setToClassify(flag);
