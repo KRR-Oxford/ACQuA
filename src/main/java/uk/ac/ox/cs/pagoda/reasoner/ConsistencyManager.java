@@ -149,7 +149,7 @@ public class ConsistencyManager extends Disposable {
 		return botQueryRecords;
 	}
 
-	boolean checkRLLowerBound() {
+	public boolean checkRLLowerBound() {
 		if(isDisposed()) throw new DisposedException();
 
 		fullQueryRecord = m_queryManager.create(QueryRecord.botQueryText, 0);
@@ -181,7 +181,7 @@ public class ConsistencyManager extends Disposable {
 //		return true;
 //	}
 
-	boolean checkELLowerBound() {
+	public boolean checkELLowerBound() {
 		if(isDisposed()) throw new DisposedException();
 
 		fullQueryRecord.updateLowerBoundAnswers(m_reasoner.elLowerStore.evaluate(fullQueryRecord.getQueryText(), fullQueryRecord
@@ -212,7 +212,7 @@ public class ConsistencyManager extends Disposable {
 		return false;
 	}
 
-	boolean check() {
+	public boolean check() {
 		if(isDisposed()) throw new DisposedException();
 
 //		if (!checkRLLowerBound()) return false;

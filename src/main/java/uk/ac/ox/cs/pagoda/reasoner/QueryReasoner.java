@@ -27,7 +27,7 @@ public abstract class QueryReasoner extends Disposable {
     private static final boolean DEFAULT_EQUALITIES = true;
     public boolean fullReasoner = this instanceof MyQueryReasoner;
     //	protected boolean forSemFacet = false;
-    PagodaProperties properties;
+    public PagodaProperties properties;
     BufferedWriter answerWriter = null;
     private StringBuilder importedData = new StringBuilder();
     private QueryManager m_queryManager = new QueryManager();
