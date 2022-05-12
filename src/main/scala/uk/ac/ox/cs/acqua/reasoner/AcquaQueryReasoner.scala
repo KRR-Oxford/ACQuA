@@ -16,50 +16,53 @@
 
 package uk.ac.ox.cs.acqua.reasoner
 
-import org.semanticweb.karma2.profile.ELHOProfile;
-import org.semanticweb.owlapi.model.OWLOntology;
+import scala.collection.JavaConverters._
+import org.semanticweb.karma2.profile.ELHOProfile
+import org.semanticweb.owlapi.model.OWLOntology
 // import org.semanticweb.owlapi.model.parameters.Imports;
 // import uk.ac.ox.cs.JRDFox.JRDFStoreException;
 import uk.ac.ox.cs.pagoda.multistage.MultiStageQueryEngine
 // import uk.ac.ox.cs.pagoda.owl.EqualitiesEliminator;
-// import uk.ac.ox.cs.pagoda.owl.OWLHelper;
-// import uk.ac.ox.cs.pagoda.query.AnswerTuples;
-// import uk.ac.ox.cs.pagoda.query.GapByStore4ID;
-// import uk.ac.ox.cs.pagoda.query.GapByStore4ID2;
-import uk.ac.ox.cs.pagoda.query.QueryRecord
-// import uk.ac.ox.cs.pagoda.query.QueryRecord.Step;
-import uk.ac.ox.cs.pagoda.reasoner.{ConsistencyManager,MyQueryReasoner,QueryReasoner}
+import uk.ac.ox.cs.pagoda.owl.OWLHelper
+import uk.ac.ox.cs.pagoda.query.{
+  AnswerTuples,
+  GapByStore4ID,
+  GapByStore4ID2,
+  QueryRecord,
+}
+import uk.ac.ox.cs.pagoda.query.QueryRecord.Step;
+import uk.ac.ox.cs.pagoda.reasoner.{
+  ConsistencyManager,
+  MyQueryReasoner,
+  QueryReasoner
+}
 import uk.ac.ox.cs.pagoda.reasoner.light.{KarmaQueryEngine,BasicQueryEngine}
 import uk.ac.ox.cs.pagoda.rules.DatalogProgram
 // import uk.ac.ox.cs.pagoda.summary.HermitSummaryFilter;
 // import uk.ac.ox.cs.pagoda.tracking.QueryTracker;
-// import uk.ac.ox.cs.pagoda.tracking.TrackingRuleEncoder;
-// import uk.ac.ox.cs.pagoda.tracking.TrackingRuleEncoderDisjVar1;
-// import uk.ac.ox.cs.pagoda.tracking.TrackingRuleEncoderWithGap;
+import uk.ac.ox.cs.pagoda.tracking.{
+  TrackingRuleEncoder,
+  TrackingRuleEncoderDisjVar1,
+  TrackingRuleEncoderWithGap,
+}
 // import uk.ac.ox.cs.pagoda.util.ExponentialInterpolation;
 // import uk.ac.ox.cs.pagoda.util.PagodaProperties;
-import uk.ac.ox.cs.pagoda.util.Timer;
+import uk.ac.ox.cs.pagoda.util.Timer
 import uk.ac.ox.cs.pagoda.util.Utility
 // import uk.ac.ox.cs.pagoda.util.disposable.DisposedException;
-// import uk.ac.ox.cs.pagoda.util.tuples.Tuple;
+import uk.ac.ox.cs.pagoda.util.tuples.Tuple;
 import uk.ac.ox.cs.rsacomb.ontology.Ontology
+import uk.ac.ox.cs.rsacomb.approximation.{Lowerbound,Upperbound}
 
 // import java.util.Collection;
 // import java.util.LinkedList;
 
-class AcquaQueryReasoner(var ontology: Ontology)
+class AcquaQueryReasoner(val ontology: Ontology)
   extends QueryReasoner {
 
-//    OWLOntology ontology;
-//    OWLOntology elho_ontology;
-//    DatalogProgram program;
-
+  private var encoder: Option[TrackingRuleEncoder] = None
   private var lazyUpperStore: Option[MultiStageQueryEngine] = None;
-//    TrackingRuleEncoder encoder;
 
-
-//    private Collection<String> predicatesWithGap = null;
-////    private int relevantOntologiesCounter = 0;
   private val timer: Timer = new Timer();
 
   private var _isConsistent: ConsistencyStatus = StatusUnchecked
@@ -69,8 +72,12 @@ class AcquaQueryReasoner(var ontology: Ontology)
 
   private val rlLowerStore: BasicQueryEngine = new BasicQueryEngine("rl-lower-bound")
   private val elLowerStore: KarmaQueryEngine = new KarmaQueryEngine("elho-lower-bound")
+  private lazy val lowerRSAOntology = ontology approximate (new Lowerbound)
+  private lazy val upperRSAOntology = ontology approximate (new Upperbound)
 
   private val trackingStore = new MultiStageQueryEngine("tracking", false);
+
+  var predicatesWithGap: Seq[String] = Seq.empty
 
   /* Load ontology into PAGOdA */
   private val datalog = new DatalogProgram(ontology.origin);
@@ -91,8 +98,80 @@ class AcquaQueryReasoner(var ontology: Ontology)
     */
   def loadOntology(ontology: OWLOntology): Unit = { }
 
+  /** Preprocessing of input ontology.
+    *
+    * This is mostly PAGOdA related. Note that, while most of the
+    * computation in RSAComb is performed "on-demand", we are forcing
+    * the approximation from above/below of the input ontology to RSA,
+    * and the compuation of their respective canonical models to make timing
+    * measured more consistent.
+    *
+    * @returns whether the input ontology is found consistent after the
+    *          preprocessing phase.
+    */
   def preprocess(): Boolean = {
-    ???
+    timer.reset();
+    Utility logInfo "Preprocessing (and checking satisfiability)..."
+
+    val name = "data"
+    val datafile = getImportedData()
+
+    /* RL lower-bound check */
+    rlLowerStore.importRDFData(name, datafile);
+    rlLowerStore.materialise("lower program", datalog.getLower.toString);
+    if (!consistencyManager.checkRLLowerBound()) {
+      Utility logDebug s"time for satisfiability checking: ${timer.duration()}"
+      _isConsistent = StatusInconsistent
+      return false
+    }
+    Utility logDebug s"The number of 'sameAs' assertions in RL lower store: ${rlLowerStore.getSameAsNumber}"
+
+    /* EHLO lower bound check */ 
+    val originalMarkProgram = OWLHelper.getOriginalMarkProgram(ontology.origin)
+    elLowerStore.importRDFData(name, datafile);
+    elLowerStore.materialise("saturate named individuals", originalMarkProgram);
+    elLowerStore.materialise("lower program", datalog.getLower.toString);
+    elLowerStore.initialiseKarma();
+    if (!consistencyManager.checkELLowerBound()) {
+      Utility logDebug s"time for satisfiability checking: ${timer.duration()}"
+      _isConsistent = StatusInconsistent
+      return false
+    }
+
+    /* Lazy upper store */
+    val tag = lazyUpperStore.map(store => {
+      store.importRDFData(name, datafile)
+      store.materialise("saturate named individuals", originalMarkProgram)
+      store.materialiseRestrictedly(datalog, null)
+    }).getOrElse(1)
+    if (tag == -1) {
+      Utility logDebug s"time for satisfiability checking: ${timer.duration()}"
+      _isConsistent = StatusInconsistent
+      return false
+    }
+    lazyUpperStore.flatMap(store => { store.dispose(); None })
+
+    trackingStore.importRDFData(name, datafile)
+    trackingStore.materialise("saturate named individuals", originalMarkProgram)
+    val gap: GapByStore4ID = new GapByStore4ID2(trackingStore, rlLowerStore);
+    trackingStore.materialiseFoldedly(datalog, gap);
+    this.predicatesWithGap = gap.getPredicatesWithGap.asScala.toSeq;
+    gap.clear();
+
+    if (datalog.getGeneral.isHorn)
+      encoder = Some(new TrackingRuleEncoderWithGap(datalog.getUpper, trackingStore))
+    else
+      encoder = Some(new TrackingRuleEncoderDisjVar1(datalog.getUpper, trackingStore))
+
+    /* Perform consistency checking if not already inconsistent */
+    if (!isConsistent()) return false
+    consistencyManager.extractBottomFragment();
+
+    /* Force computation of lower/upper RSA approximations */
+    lowerRSAOntology//.computeCanonicalModel()
+    upperRSAOntology//.computeCanonicalModel()
+
+    true
   }
 
   /** Returns a the consistency status of the ontology.
@@ -112,99 +191,8 @@ class AcquaQueryReasoner(var ontology: Ontology)
   }
 
   def evaluate(query: QueryRecord): Unit = {
-    ???
-  }
-
-  def evaluateUpper(record: QueryRecord): Unit= ???
-
-//    public Collection<String> getPredicatesWithGap() {
-//        if(isDisposed()) throw new DisposedException();
-//        return predicatesWithGap;
-//    }
-
-//    @Override
-//    public boolean preprocess() {
-//        if(isDisposed()) throw new DisposedException();
-
-//        t.reset();
-//        Utility.logInfo("Preprocessing (and checking satisfiability)...");
-
-//        String name = "data", datafile = getImportedData();
-//        rlLowerStore.importRDFData(name, datafile);
-//        rlLowerStore.materialise("lower program", program.getLower().toString());
-////		program.getLower().save();
-//        if(!consistency.checkRLLowerBound()) {
-//            Utility.logDebug("time for satisfiability checking: " + t.duration());
-//            isConsistent = ConsistencyStatus.INCONSISTENT;
-//            return false;
-//        }
-//        Utility.logDebug("The number of sameAs assertions in RL lower store: " + rlLowerStore.getSameAsNumber());
-
-//        String originalMarkProgram = OWLHelper.getOriginalMarkProgram(ontology);
-
-//        elLowerStore.importRDFData(name, datafile);
-//        elLowerStore.materialise("saturate named individuals", originalMarkProgram);
-//        elLowerStore.materialise("lower program", program.getLower().toString());
-//        elLowerStore.initialiseKarma();
-//        if(!consistency.checkELLowerBound()) {
-//            Utility.logDebug("time for satisfiability checking: " + t.duration());
-//            isConsistent = ConsistencyStatus.INCONSISTENT;
-//            return false;
-//        }
-
-//        if(lazyUpperStore != null) {
-//            lazyUpperStore.importRDFData(name, datafile);
-//            lazyUpperStore.materialise("saturate named individuals", originalMarkProgram);
-//            int tag = lazyUpperStore.materialiseRestrictedly(program, null);
-//            if(tag == -1) {
-//                Utility.logDebug("time for satisfiability checking: " + t.duration());
-//                isConsistent = ConsistencyStatus.INCONSISTENT;
-//                return false;
-//            }
-//            else if(tag != 1) {
-//                lazyUpperStore.dispose();
-//                lazyUpperStore = null;
-//            }
-//        }
-//        if(consistency.checkUpper(lazyUpperStore)) {
-//            isConsistent = ConsistencyStatus.CONSISTENT;
-//            Utility.logDebug("time for satisfiability checking: " + t.duration());
-//        }
-
-//        trackingStore.importRDFData(name, datafile);
-//        trackingStore.materialise("saturate named individuals", originalMarkProgram);
-
-////		materialiseFullUpper();
-////		GapByStore4ID gap = new GapByStore4ID(trackingStore);
-//        GapByStore4ID gap = new GapByStore4ID2(trackingStore, rlLowerStore);
-//        trackingStore.materialiseFoldedly(program, gap);
-//        predicatesWithGap = gap.getPredicatesWithGap();
-//        gap.clear();
-
-//        if(program.getGeneral().isHorn())
-//            encoder = new TrackingRuleEncoderWithGap(program.getUpper(), trackingStore);
-//        else
-//            encoder = new TrackingRuleEncoderDisjVar1(program.getUpper(), trackingStore);
-////			encoder = new TrackingRuleEncoderDisj1(program.getUpper(), trackingStore);
-////			encoder = new TrackingRuleEncoderDisjVar2(program.getUpper(), trackingStore);
-////			encoder = new TrackingRuleEncoderDisj2(program.getUpper(), trackingStore);
-
-//        // TODO? add consistency check by Skolem-upper-bound
-
-//        if(!isConsistent())
-//            return false;
-
-//        consistency.extractBottomFragment();
-
-//        return true;
-//    }
-
-//    @Override
-//    public void evaluate(QueryRecord queryRecord) {
-//        if(isDisposed()) throw new DisposedException();
-
-//        if(queryLowerAndUpperBounds(queryRecord))
-//            return;
+    if(queryLowerAndUpperBounds(query))
+      return;
 
 //        OWLOntology relevantOntologySubset = extractRelevantOntologySubset(queryRecord);
 
@@ -237,6 +225,13 @@ class AcquaQueryReasoner(var ontology: Ontology)
 //        if(properties.getToCallHermiT())
 //            queryRecord.markAsProcessed();
 //        summarisedChecker.dispose();
+    ???
+  }
+
+  def evaluateUpper(record: QueryRecord): Unit= ???
+
+//    @Override
+//    public void evaluate(QueryRecord queryRecord) {
 //    }
 
 //    @Override
@@ -306,32 +301,31 @@ class AcquaQueryReasoner(var ontology: Ontology)
 //        return false;
 //    }
 
-//    /**
-//     * Returns the part of the ontology relevant for Hermit, while computing the bound answers.
-//     */
-//    private boolean queryLowerAndUpperBounds(QueryRecord queryRecord) {
+  /**
+   * Returns the part of the ontology relevant for Hermit, while computing the bound answers.
+   */
+  private def queryLowerAndUpperBounds(query: QueryRecord): Boolean = {
+    Utility logInfo ">> Base bounds <<"
+    val extendedQueryTexts: Tuple[String] = query.getExtendedQueryText()
+    var rlAnswer: AnswerTuples = null
+    var elAnswer: AnswerTuples = null
 
-//        Utility.logInfo(">> Base bounds <<");
+    /* Computing RL lower bound answers */
+    timer.reset();
+    try {
+      rlAnswer = rlLowerStore.evaluate(query.getQueryText, query.getAnswerVariables)
+      Utility logDebug timer.duration()
+      query updateLowerBoundAnswers rlAnswer
+    } finally {
+        if (rlAnswer != null) rlAnswer.dispose()
+    }
+    query.addProcessingTime(Step.LOWER_BOUND, timer.duration());
 
-//        AnswerTuples rlAnswer = null, elAnswer = null;
-
-//        t.reset();
-//        try {
-//            rlAnswer = rlLowerStore.evaluate(queryRecord.getQueryText(), queryRecord.getAnswerVariables());
-//            Utility.logDebug(t.duration());
-//            queryRecord.updateLowerBoundAnswers(rlAnswer);
-//        } finally {
-//            if(rlAnswer != null) rlAnswer.dispose();
-//        }
-//        queryRecord.addProcessingTime(Step.LOWER_BOUND, t.duration());
-
-//        Tuple<String> extendedQueryTexts = queryRecord.getExtendedQueryText();
-
-//        if(properties.getUseAlwaysSimpleUpperBound() || lazyUpperStore == null) {
-//            Utility.logDebug("Tracking store");
-//            if(queryUpperStore(trackingStore, queryRecord, extendedQueryTexts, Step.SIMPLE_UPPER_BOUND))
-//                return true;
-//        }
+    if(properties.getUseAlwaysSimpleUpperBound() || lazyUpperStore.isEmpty) {
+        Utility logDebug "Tracking store"
+        // if (queryUpperStore(trackingStore, query, extendedQueryTexts, Step.SIMPLE_UPPER_BOUND))
+        //     return true;
+    }
 
 //        if(!queryRecord.isBottom()) {
 //            Utility.logDebug("Lazy store");
@@ -356,8 +350,8 @@ class AcquaQueryReasoner(var ontology: Ontology)
 //            return true;
 //        }
 
-//        return false;
-//    }
+    return false;
+  }
 
 //    private OWLOntology extractRelevantOntologySubset(QueryRecord queryRecord) {
 //        Utility.logInfo(">> Relevant ontology-subset extraction <<");
