@@ -17,13 +17,19 @@
 package uk.ac.ox.cs.acqua.util
 
 import scala.collection.mutable.Map
-
-//import util.Logger
+import uk.ac.ox.cs.rsacomb.util.Logger
 
 case class AcquaOption[+T](opt: T) {
   def get[T]: T = opt.asInstanceOf[T]
 }
 
+/** Command line options for ACQuA
+  *
+  * TODO: integrate with PAGOdA's Logger.
+  * The ideal situation would be to add a Logger interface to PAGOdA and
+  * make everything dependent on it so that this Logger can be
+  * implemented as an instance of the interface.
+  */
 object AcquaConfig {
   type Config = Map[Symbol, AcquaOption[Any]]
 
@@ -32,10 +38,10 @@ object AcquaConfig {
   /** Help message */
   private val help: String = """
 
-  rsacomb - combined approach for CQ answering for RSA ontologies.
+  acqua - conjunctive query answering over unrestricted ontologies
 
   USAGE
-    rsacomb [OPTIONS] <ontology> [<data> ...]
+    acqua [OPTIONS]
 
       -h | -? | --help
           print this help message
@@ -60,12 +66,6 @@ object AcquaConfig {
           directory is provided, all files in the directory (recursively)
           will be considered.
 
-      -x | --approximation <string>
-          values available are "lowerupper" or "upperbound" corresponding
-          to the two algorithms for ontology approximation shipping by 
-          default with RSAComb. You will need to change the source code to
-          expose custom approximation modules through the CLI.
-
       -t | --transitive
           "upperbound" approximation specific option. Include property chain
           axioms (and hence the more common transitive properties) when
@@ -77,7 +77,6 @@ object AcquaConfig {
   private val default: Config = Map(
     'transitive -> false,
     'data -> List.empty[os.Path],
-    'approximation -> 'lowerbound
   )
 
   /** Parse a string into a path.
@@ -126,19 +125,16 @@ object AcquaConfig {
         sys.exit(0)
       }
       case flag @ ("-l" | "--logger") :: _level :: tail => {
-        // val level = _level match {
-        //   case "quiet"   => Logger.QUIET
-        //   case "debug"   => Logger.DEBUG
-        //   case "verbose" => Logger.VERBOSE
-        //   case _         => Logger.NORMAL
-        // }
-        parse(tail, config += ('logger -> _level))
+        val level = _level match {
+          case "quiet"   => Logger.QUIET
+          case "debug"   => Logger.DEBUG
+          case "verbose" => Logger.VERBOSE
+          case _         => Logger.NORMAL
+        }
+        parse(tail, config += ('logger -> level))
       }
       case flag @ ("-a" | "--answers") :: answers :: tail =>
         parse(tail, config += ('answers -> getPath(answers)))
-      case flag @ ("-x" | "--approximation") :: approx :: tail => {
-        parse(tail, config += ('approximation -> Symbol(approx)))
-      }
       case flag @ ("-t" | "--transitive") :: tail =>
         parse(tail, config += ('transitive -> true))
       case flag @ ("-q" | "--queries") :: _query :: tail => {
@@ -190,22 +186,21 @@ object AcquaConfig {
     * @returns a string describing the configuration
     */
   def describe(config: Config): Unit = {
-    // config foreach { case (k,v) => k match {
-    //   case 'logger => Logger print s"Logger level: ${v.get[Logger.Level]}"
-    //   case 'ontology => Logger print s"Ontology file: ${v.get[os.Path]}"
-    //   case 'data => {
-    //     val paths = v.get[List[os.Path]]
-    //     val ellipsis = if (paths.length > 1) " [...]" else "" 
-    //     Logger print s"Data files: ${paths.head}$ellipsis"
-    //   }
-    //   case 'queries => {
-    //     val paths = v.get[List[os.Path]]
-    //     val ellipsis = if (paths.length > 1) " [...]" else "" 
-    //     Logger print s"Query files: ${paths.head}$ellipsis"
-    //   }
-    //   case 'answers => Logger print s"Path to answers: ${v.get[os.Path]}"
-    //   case 'approximation => Logger print s"Applied approximation: ${v.get[Symbol].name}"
-    //   case 'transitive => Logger print s"Include property chain axioms: ${v.get[Boolean]}"
-    // }}
+    config foreach { case (k,v) => k match {
+      case 'logger => Logger print s"Logger level: ${v.get[Logger.Level]}"
+      case 'ontology => Logger print s"Ontology file: ${v.get[os.Path]}"
+      case 'data => {
+        val paths = v.get[List[os.Path]]
+        val ellipsis = if (paths.length > 1) " [...]" else "" 
+        Logger print s"Data files: ${paths.head}$ellipsis"
+      }
+      case 'queries => {
+        val paths = v.get[List[os.Path]]
+        val ellipsis = if (paths.length > 1) " [...]" else "" 
+        Logger print s"Query files: ${paths.head}$ellipsis"
+      }
+      case 'answers => Logger print s"Path to answers: ${v.get[os.Path]}"
+      case 'transitive => Logger print s"Include property chain axioms: ${v.get[Boolean]}"
+    }}
   }
 }

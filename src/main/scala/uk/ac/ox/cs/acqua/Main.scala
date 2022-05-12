@@ -62,9 +62,10 @@ object Acqua extends App {
   else {
       Utility logInfo "The ontology is inconsistent!"
       reasoner.dispose();
-      // Exit somehow
+      sys.exit(0)
   }
 
+  /* Query Answering */
   if (config contains 'queries) {
     val queryManager = reasoner.getQueryManager()
     config('queries).get[List[os.Path]].map(path => {
