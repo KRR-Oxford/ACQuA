@@ -668,13 +668,13 @@ public class QueryRecord extends Disposable {
     }
 
     public boolean updateUpperBoundAnswers(AnswerTuples answerTuples, boolean toCheckAux) {
-        RDFoxAnswerTuples rdfAnswerTuples;
-        if(answerTuples instanceof RDFoxAnswerTuples)
-            rdfAnswerTuples = (RDFoxAnswerTuples) answerTuples;
-        else {
-            Utility.logError("The upper bound must be computed by RDFox!");
-            return false;
-        }
+        // RDFoxAnswerTuples rdfAnswerTuples;
+        // if(answerTuples instanceof RDFoxAnswerTuples)
+        //     rdfAnswerTuples = (RDFoxAnswerTuples) answerTuples;
+        // else {
+        //     Utility.logError("The upper bound must be computed by RDFox!");
+        //     return false;
+        // }
 
         if(soundAnswerTuples.size() > 0) {
             int number = 0;
@@ -697,7 +697,7 @@ public class QueryRecord extends Disposable {
         Set<AnswerTuple> tupleSet = new HashSet<AnswerTuple>();
         AnswerTuple tuple, extendedTuple;
         for(; answerTuples.isValid(); answerTuples.moveNext()) {
-            extendedTuple = rdfAnswerTuples.getTuple();
+            extendedTuple = answerTuples.getTuple();
             if(isBottom() || !extendedTuple.hasAnonymousIndividual()) {
                 tuple = AnswerTuple.create(extendedTuple, answerVariables[0].length);
                 if((!toCheckAux || !tuple.hasAuxPredicate()) && !soundAnswerTuples.contains(tuple)) {

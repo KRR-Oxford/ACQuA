@@ -25,7 +25,10 @@ import uk.ac.ox.cs.pagoda.reasoner.{ELHOQueryReasoner,MyQueryReasoner,QueryReaso
 import uk.ac.ox.cs.pagoda.util.PagodaProperties;
 import uk.ac.ox.cs.pagoda.util.Utility;
 
-import uk.ac.ox.cs.acqua.reasoner.RSAQueryReasoner
+import uk.ac.ox.cs.acqua.reasoner.{
+  AcquaQueryReasoner,
+  RSACombQueryReasoner
+}
 import uk.ac.ox.cs.acqua.util.AcquaConfig
 
 object Acqua extends App {
@@ -45,11 +48,9 @@ object Acqua extends App {
   } else if (OWLHelper.isInELHO(ontology.origin)) {
     new ELHOQueryReasoner();
   } else if (ontology.isRSA) {
-    new RSAQueryReasoner(ontology)
+    new RSACombQueryReasoner(ontology)
   } else {
-    // Return ACQuA reasoner
-    // new MyQueryReasoner(performMultiStages, considerEqualities);
-    ???
+    new AcquaQueryReasoner(ontology)
   }
 
   /* Preprocessing */

@@ -44,20 +44,20 @@ object RSACombAnswerTuples {
       val answers: ConjunctiveQueryAnswers
     ) extends AnswerTuples {
 
-    /* TODO: this might not be the best choice, since the internal
-     * iterator in a collection is a single traverse iterator.
-     * We might be messing with internal state.
+    /* Iterator simulated using an index over an [[IndexedSeq]]
+     *
+     * This might not be the best solution, but at least it offers
+     * better flexibility than using the internal [[Seq]] iterator.
+     * On top of this, indexed access is guaranteed to be efficient.
      */
-    private var iter = answers.answers.iterator
+    private var iter = answers.answers.map(_._2).toIndexedSeq
+    private var idx: Int = 0
 
-    /** Reset the iterator over the answers.
-      *
-      * @note this operation is currently not supported.
-      */
-    def reset(): Unit = ???
+    /** Reset the iterator over the answers. */
+    def reset(): Unit = idx = 0
 
     /** True if the iterator can provide more items. */
-    def isValid: Boolean = iter.hasNext
+    def isValid: Boolean = idx < iter.length
 
     /** Get arity of answer variables. */
     def getArity: Int = answers.query.answer.length
@@ -67,30 +67,31 @@ object RSACombAnswerTuples {
       answers.query.answer.map(_.getName).toArray
 
     /** Advance iterator state */
-    def moveNext(): Unit = { }
+    def moveNext(): Unit = idx += 1
 
     /** Get next [[uk.ac.ox.cs.pagoda.query.AnswerTuple]] from the iterator */
-    def getTuple: AnswerTuple = iter.next()
+    def getTuple: AnswerTuple = iter(idx)
 
     /** Return true if the input tuple is part of this collection.
       *
       * @param tuple the answer to be checked.
+      *
+      * @note this operation is currently not supported.
       */
-    def contains(tuple: AnswerTuple): Boolean =
-      answers.contains(tuple)
+    def contains(tuple: AnswerTuple): Boolean = ???
 
     /** Skip one item in the iterator.
       *
       * @note that the semantic of this method is not clear to the
       * author and the description is just an assumption.
       */
-    def remove(): Unit = iter.next()
+    def remove(): Unit = moveNext()
   }
 
   /** Implicit convertion from RSAComb-style answers to [[uk.ac.ox.cs.pagoda.query.AnswerTuple]] */
   private implicit def asAnswerTuple(
-    answer: (Long,Seq[Resource])
-  ): AnswerTuple = new AnswerTuple(answer._2.map(res =>
+    answer: Seq[Resource]
+  ): AnswerTuple = new AnswerTuple(answer.map(res =>
     res match {
       case r: IRI => OldIndividual.create(r.getIRI)
       case r: BlankNode => OldBlankNode.create(r.getID)

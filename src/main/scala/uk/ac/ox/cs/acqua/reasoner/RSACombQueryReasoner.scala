@@ -20,24 +20,20 @@ import java.util.Collection;
 import scala.collection.JavaConverters._
 
 import org.semanticweb.owlapi.model.OWLOntology
-import uk.ac.ox.cs.rsacomb.ontology.RSAOntology
 import uk.ac.ox.cs.rsacomb.approximation.{Approximation,Lowerbound}
-import uk.ac.ox.cs.rsacomb.ontology.Ontology
+import uk.ac.ox.cs.rsacomb.ontology.{Ontology,RSAOntology}
 import uk.ac.ox.cs.pagoda.query.QueryRecord
 import uk.ac.ox.cs.pagoda.reasoner.QueryReasoner
+import uk.ac.ox.cs.acqua.approximation.Noop
 
-class RSAQueryReasoner(val origin: Ontology) extends QueryReasoner {
+class RSACombQueryReasoner(
+  val origin: Ontology,
+  val toRSA: Approximation[RSAOntology] = Noop
+) extends QueryReasoner {
 
   /* Implicit compatibility between PAGOdA and RSAComb types */
   import uk.ac.ox.cs.acqua.implicits.PagodaConverters._
 
-  /** This class is instantiated when the input ontology is RSA.
-    * Approximation (via any algorithm with RSAOntology as target)
-    * doesn't perform anything, but is useful to turn a generic
-    * [[uk.ac.ox.cs.rsacomb.ontology.Ontology]] into an
-    * [[uk.ac.ox.cs.rsacomb.RSAOntology]].
-    */
-  private val toRSA: Approximation[RSAOntology] = new Lowerbound
   val rsa: RSAOntology = origin approximate toRSA
 
   /** Doesn't perform any action.
