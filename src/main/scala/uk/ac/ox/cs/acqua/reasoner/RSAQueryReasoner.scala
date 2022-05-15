@@ -20,7 +20,7 @@ import java.util.Collection;
 import scala.collection.JavaConverters._
 
 import org.semanticweb.owlapi.model.OWLOntology
-import uk.ac.ox.cs.rsacomb.RSAOntology
+import uk.ac.ox.cs.rsacomb.ontology.RSAOntology
 import uk.ac.ox.cs.rsacomb.approximation.{Approximation,Lowerbound}
 import uk.ac.ox.cs.rsacomb.ontology.Ontology
 import uk.ac.ox.cs.pagoda.query.QueryRecord
