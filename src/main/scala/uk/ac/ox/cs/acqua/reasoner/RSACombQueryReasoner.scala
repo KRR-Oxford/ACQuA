@@ -44,14 +44,15 @@ class RSACombQueryReasoner(
     /* Nothing to do */
   }
 
-  /** Check consistency and returns whether the ontology is RSA.
+  /** Force computation of canonical model for combined approach in RSA.
     *
-    * Preprocessing is performed on instance creation, so no actual work
-    * is being done here.
+    * @returns whether the original ontolgy is RSA.
     *
-    * @note Implemented for compatibility with other reasoners.
+    * @note that it is not necessary to call this method since the
+    * preprocessing is performed "on demand" when evaluating a query.
    */
   def preprocess(): Boolean = {
+    rsa.computeCanonicalModel()
     origin.isRSA
   }
 
@@ -73,12 +74,12 @@ class RSACombQueryReasoner(
     *
     * TODO: perform logging of answers
     */
-  override def evaluate(queries: Collection[QueryRecord]): Unit = {
-    val answers = rsa ask queries
-    /* Perform logging */
-    // Logger write answers
-    // Logger.generateSimulationScripts(datapath, queries)
-  }
+  //override def evaluate(queries: Collection[QueryRecord]): Unit = {
+  //  val answers = rsa ask queries
+  //  /* Perform logging */
+  //  // Logger write answers
+  //  // Logger.generateSimulationScripts(datapath, queries)
+  //}
 
   /** Evaluates a single query.
     *
@@ -88,11 +89,42 @@ class RSACombQueryReasoner(
     * TODO: perform logging of answers
     */
   def evaluate(query: QueryRecord): Unit = {
+    import uk.ac.ox.cs.acqua.implicits.RSACombAnswerTuples._
     val answers = rsa ask query
-    /* Perform logging */
-    // Logger write answers
-    // Logger.generateSimulationScripts(datapath, queries)
+    query updateLowerBoundAnswers answers
+    if (toRSA == Noop) {
+      /* Perform logging
+       * In this case the engine is used as a standalone engine, meaning
+       * that it is time to print out query answers and other related
+       * logging routines.
+       */
+      //Logger write answers
+      //Logger.generateSimulationScripts(datapath, queries)
+    }
   }
 
-  def evaluateUpper(record: QueryRecord): Unit= ???
+  /** Evaluates a single query.
+    *
+    * Uses RSAComb internally to reuse part of the computation of
+    * multiple calls to [[uk.ac.ox.cs.rsacomb.RSAOntology.ask]].
+    *
+    * @note the result of the computation is saved in the "upper bound"
+    * of the input query record.
+    *
+    * TODO: perform logging of answers
+    */
+  def evaluateUpper(query: QueryRecord): Unit = {
+    import uk.ac.ox.cs.acqua.implicits.RSACombAnswerTuples._
+    val answers = rsa ask query
+    query updateUpperBoundAnswers answers
+    if (toRSA == Noop) {
+      /* Perform logging
+       * In this case the engine is used as a standalone engine, meaning
+       * that it is time to print out query answers and other related
+       * logging routines.
+       */
+      //Logger write answers
+      //Logger.generateSimulationScripts(datapath, queries)
+    }
+  }
 }

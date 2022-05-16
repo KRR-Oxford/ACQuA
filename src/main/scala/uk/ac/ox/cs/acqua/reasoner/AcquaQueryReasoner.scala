@@ -74,8 +74,8 @@ class AcquaQueryReasoner(val ontology: Ontology)
 
   private val rlLowerStore: BasicQueryEngine = new BasicQueryEngine("rl-lower-bound")
   private val elLowerStore: KarmaQueryEngine = new KarmaQueryEngine("elho-lower-bound")
-  private lazy val lowerRSAOntology = ontology approximate (new Lowerbound)
-  private lazy val upperRSAOntology = ontology approximate (new Upperbound)
+  private lazy val lowerRSAEngine = new RSACombQueryReasoner(ontology, new Lowerbound)
+  private lazy val upperRSAEngine = new RSACombQueryReasoner(ontology, new Upperbound)
 
   private val trackingStore = new MultiStageQueryEngine("tracking", false);
 
@@ -172,8 +172,8 @@ class AcquaQueryReasoner(val ontology: Ontology)
     /* Force computation of lower RSA approximations and its canonical
      * model. We wait to process the upperbound since it might not be
      * necessary after all. */
-    lowerRSAOntology.computeCanonicalModel()
-    //upperRSAOntology.computeCanonicalModel()
+    lowerRSAEngine.preprocess()
+    //upperRSAEngine.preprocess()
 
     true
   }
@@ -387,9 +387,7 @@ class AcquaQueryReasoner(val ontology: Ontology)
     * @returns true if the query is fully answered.
     */
   private def queryRSALowerBound(query: QueryRecord): Boolean = {
-    import uk.ac.ox.cs.acqua.implicits.RSACombAnswerTuples._
-    val answers = lowerRSAOntology ask query
-    query updateLowerBoundAnswers answers
+    lowerRSAEngine evaluate query
     query.isProcessed
   }
 
@@ -399,9 +397,7 @@ class AcquaQueryReasoner(val ontology: Ontology)
     * @returns true if the query is fully answered.
     */
   private def queryRSAUpperBound(query: QueryRecord): Boolean = {
-    import uk.ac.ox.cs.acqua.implicits.RSACombAnswerTuples._
-    val answers = upperRSAOntology ask query
-    query updateUpperBoundAnswers answers
+    upperRSAEngine evaluate query
     query.isProcessed
   }
 
