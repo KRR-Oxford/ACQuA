@@ -33,7 +33,6 @@ import uk.ac.ox.cs.pagoda.query.{
 }
 import uk.ac.ox.cs.pagoda.query.QueryRecord.Step
 import uk.ac.ox.cs.pagoda.reasoner.{
-  ConsistencyManager,
   MyQueryReasoner,
   QueryReasoner
 }
@@ -62,7 +61,7 @@ class AcquaQueryReasoner(val ontology: Ontology)
   /** Compatibility convertions between PAGOdA and RSAComb */
   import uk.ac.ox.cs.acqua.implicits.PagodaConverters._
 
-  private var encoder: Option[TrackingRuleEncoder] = None
+  var encoder: Option[TrackingRuleEncoder] = None
   private var lazyUpperStore: Option[MultiStageQueryEngine] = None;
 
   private val timer: Timer = new Timer();
@@ -70,25 +69,25 @@ class AcquaQueryReasoner(val ontology: Ontology)
   private var _isConsistent: ConsistencyStatus = StatusUnchecked
   // TODO: explicit casting to MyQueryReasoner makes no sense. Find
   // another solution. Probably requires changing PAGOdA source code.
-  private val consistencyManager: ConsistencyManager  = new ConsistencyManager(this.asInstanceOf[MyQueryReasoner])
+  private val consistencyManager: ConsistencyManager  = new ConsistencyManager(this)
 
-  private val rlLowerStore: BasicQueryEngine = new BasicQueryEngine("rl-lower-bound")
-  private val elLowerStore: KarmaQueryEngine = new KarmaQueryEngine("elho-lower-bound")
+  val rlLowerStore: BasicQueryEngine = new BasicQueryEngine("rl-lower-bound")
+  val elLowerStore: KarmaQueryEngine = new KarmaQueryEngine("elho-lower-bound")
   private lazy val lowerRSAEngine = new RSACombQueryReasoner(ontology, new Lowerbound)
   private lazy val upperRSAEngine = new RSACombQueryReasoner(ontology, new Upperbound)
 
-  private val trackingStore = new MultiStageQueryEngine("tracking", false);
+  val trackingStore = new MultiStageQueryEngine("tracking", false);
 
   var predicatesWithGap: Seq[String] = Seq.empty
 
   /* Load ontology into PAGOdA */
-  private val datalog = new DatalogProgram(ontology.origin);
+  val datalog = new DatalogProgram(ontology.origin);
   //datalog.getGeneral().save();
   if (!datalog.getGeneral().isHorn())
     lazyUpperStore = Some(new MultiStageQueryEngine("lazy-upper-bound", true))
-  importData(datalog.getAdditionalDataFile());
+  importData(datalog.getAdditionalDataFile())
   private val elhoOntology: OWLOntology = new ELHOProfile().getFragment(ontology.origin);
-  elLowerStore.processOntology(elhoOntology);
+  elLowerStore processOntology elhoOntology
 
 
   /** Performs nothing.
@@ -121,7 +120,7 @@ class AcquaQueryReasoner(val ontology: Ontology)
     /* RL lower-bound check */
     rlLowerStore.importRDFData(name, datafile);
     rlLowerStore.materialise("lower program", datalog.getLower.toString);
-    if (!consistencyManager.checkRLLowerBound()) {
+    if (!consistencyManager.checkRLLowerBound) {
       Utility logDebug s"time for satisfiability checking: ${timer.duration()}"
       _isConsistent = StatusInconsistent
       return false
@@ -134,7 +133,7 @@ class AcquaQueryReasoner(val ontology: Ontology)
     elLowerStore.materialise("saturate named individuals", originalMarkProgram);
     elLowerStore.materialise("lower program", datalog.getLower.toString);
     elLowerStore.initialiseKarma();
-    if (!consistencyManager.checkELLowerBound()) {
+    if (!consistencyManager.checkELLowerBound) {
       Utility logDebug s"time for satisfiability checking: ${timer.duration()}"
       _isConsistent = StatusInconsistent
       return false
@@ -187,7 +186,7 @@ class AcquaQueryReasoner(val ontology: Ontology)
     */
   def isConsistent(): Boolean = {
     if (_isConsistent == StatusUnchecked) {
-      _isConsistent = consistencyManager.check()
+      _isConsistent = consistencyManager.check
       Utility logDebug s"time for satisfiability checking: ${timer.duration()}"
     }
     Utility logInfo s"The ontology is ${_isConsistent}!"
