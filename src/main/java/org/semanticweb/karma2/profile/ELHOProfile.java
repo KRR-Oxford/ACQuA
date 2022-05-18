@@ -52,7 +52,7 @@ public class ELHOProfile implements OWLProfile {
 		try {
 			Utility.logDebug("OntologyID: " + ontology.getOntologyID()); 
 			try {
-				String ontologyIRI = ontology.getOntologyID().getOntologyIRI().toString();
+				String ontologyIRI = ontology.getOntologyID().getOntologyIRI().map(iri -> iri.toString()).orElse("NOID");
 				if (ontologyIRI.contains(".owl"))
 					ontologyIRI = ontologyIRI.replace(".owl", "-elho.owl");
 				else 
@@ -75,7 +75,7 @@ public class ELHOProfile implements OWLProfile {
 		OWLProfileReport report = checkOntology(elhoOntology);
 
 		for (OWLProfileViolation violation: report.getViolations()) {
-			OWLAxiom axiom = violation.getAxiom();
+            OWLAxiom axiom = violation.getAxiom();
 			manager.removeAxiom(elhoOntology, axiom);
 		}
 		Utility.logDebug("ELHO fragment extracted ... ");
