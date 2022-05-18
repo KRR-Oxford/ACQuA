@@ -26,8 +26,11 @@ import uk.ac.ox.cs.pagoda.query.QueryRecord
 object PagodaConverters {
 
   implicit def queryRecord2conjuctiveQuery(q: QueryRecord): ConjunctiveQuery = {
-    // TODO: check whether `q.id` is correct
-    ConjunctiveQuery.parse(q.id,q.getQueryText(),RSA.Prefixes).get
+    ConjunctiveQuery.parse(
+      q.getQueryID.toIntOption.getOrElse(-1),
+      q.getQueryText(),
+      RSA.Prefixes
+    ).get
   }
 
   implicit def queryRecords2conjuctiveQueries(qs: Collection[QueryRecord]): List[ConjunctiveQuery] =
