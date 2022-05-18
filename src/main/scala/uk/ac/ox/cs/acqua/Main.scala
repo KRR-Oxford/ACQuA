@@ -35,8 +35,9 @@ object Acqua extends App {
   val config = AcquaConfig.parse(args.toList)
   AcquaConfig describe config
 
-  val ontopath = os.Path("tests/lubm/univ-bench.owl", base = os.pwd)
-  val ontology = Ontology(ontopath, List.empty).normalize(new Normalizer)
+  val ontopath = config('ontology).get[os.Path]
+  val datapath = config('data).get[List[os.Path]]
+  val ontology = Ontology(ontopath, datapath).normalize(new Normalizer)
 
   val properties = new PagodaProperties()
 
