@@ -204,8 +204,8 @@ class AcquaQueryReasoner(val ontology: Ontology)
     * @param query the query record to evaluate.
     */
   def evaluate(query: QueryRecord): Unit = {
+    queryLowerAndUpperBounds(query)
     val processed =
-      queryLowerAndUpperBounds(query) ||
       queryRSALowerBound(query) ||
       queryRSAUpperBound(query)
     if (!processed) {
