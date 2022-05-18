@@ -235,20 +235,19 @@
 				</executions>
 			</plugin>
 		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<excludes>
+					<exclude>pagoda.properties</exclude>
+				</excludes>
+			</resource>
+		</resources>
 	</build>
 
   <!--  <build>-->
   <!--      <sourceDirectory>src/main/scala</sourceDirectory>-->
   <!--      <testSourceDirectory>src/test/scala</testSourceDirectory>-->
-		<!--<resources>-->
-			<!--<resource>-->
-				<!--<directory>src/main/java/resources</directory>-->
-				<!--<excludes>-->
-					<!--<exclude>pagoda.properties</exclude>-->
-				<!--</excludes>-->
-			<!--</resource>-->
-
-		<!--</resources>-->
 		<!--<testResources>-->
 			<!--<testResource>-->
   <!--              <directory>src/test/java/resources</directory>-->
