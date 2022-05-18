@@ -117,9 +117,9 @@ public class QueryRecord extends Disposable {
         boolean update = false;
         for(AnswerTuple tuple; answerTuples.isValid(); answerTuples.moveNext()) {
             tuple = answerTuples.getTuple();
-            if(!soundAnswerTuples.contains(tuple) && (gapAnswerTuples == null || gapAnswerTuples.contains(tuple))) {
+            if(!soundAnswerTuples.contains(tuple)) {
                 soundAnswerTuples.add(tuple);
-                if(gapAnswerTuples != null)
+                if(gapAnswerTuples != null && gapAnswerTuples.contains(tuple))
                     gapAnswerTuples.remove(tuple);
                 update = true;
             }
