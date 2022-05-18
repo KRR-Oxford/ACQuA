@@ -1,5 +1,6 @@
 package uk.ac.ox.cs.pagoda.reasoner;
 
+import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
 import org.semanticweb.owlapi.model.*;
 import uk.ac.ox.cs.JRDFox.model.Individual;
@@ -63,7 +64,7 @@ class HermiTReasoner extends QueryReasoner {
         factory = onto.getOWLOntologyManager().getOWLDataFactory();
         roller = new QueryRoller(factory);
 
-        hermit = new Reasoner(onto);
+        hermit = new Reasoner(new Configuration(), onto);
         return isConsistent();
     }
 

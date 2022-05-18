@@ -20,7 +20,7 @@ public class HermitTester {
 
 	public static void main(String[] args) {
 		OWLOntology onto = OWLHelper.loadOntology("imported.owl");
-		Reasoner hermit = new Reasoner(onto);
+		Reasoner hermit = new Reasoner(new Configuration(), onto);
 		OWLDataFactory f = onto.getOWLOntologyManager().getOWLDataFactory();
 		OWLClass concept = f.getOWLClass(IRI.create("http://semantics.crl.ibm.com/univ-bench-dl.owl#Query12")); 
 		

@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Scanner;
 
+import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
 import org.semanticweb.owlapi.model.AxiomType;
 import org.semanticweb.owlapi.model.IRI;
@@ -65,7 +66,7 @@ public class SummaryTester {
 		OWLDataFactory factory = summary.getOWLOntologyManager().getOWLDataFactory(); 
 		QueryRoller r = new QueryRoller(factory);
 		OWLClassExpression summarisedQueryExp;
-		Reasoner reasoner = new Reasoner(summary); 
+		Reasoner reasoner = new Reasoner(new Configuration(), summary); 
 		QueryManager queryManager = new QueryManager(); 
 		int upperBoundCounter, queryID = 0;
 		StringBuilder queryText = new StringBuilder();

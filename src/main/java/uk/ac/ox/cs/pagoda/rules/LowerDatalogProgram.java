@@ -1,6 +1,7 @@
 package uk.ac.ox.cs.pagoda.rules;
 
 import org.apache.commons.io.FilenameUtils;
+import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
 import org.semanticweb.HermiT.model.*;
 import org.semanticweb.owlapi.model.*;
@@ -149,7 +150,7 @@ class ClassifyThread extends Thread {
 	public void run() {
 		ontology = m_program.getOntology();
 		try {
-			hermitReasoner = new Reasoner(ontology);
+			hermitReasoner = new Reasoner(new Configuration(), ontology);
 			Timer t = new Timer(); 
 			hermitReasoner.classifyClasses();
 			Utility.logInfo("HermiT classification done: " + t.duration());

@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.lang.reflect.*;
 
 import org.semanticweb.HermiT.model.Atom;
 import org.semanticweb.HermiT.model.AtomicConcept;
@@ -196,21 +197,46 @@ public class OntologyProcesser {
 	public void clausify(OWLDataFactory factory,String ontologyIRI,OWLAxioms axioms,OWLAxiomsExpressivity axiomsExpressivity, File dataFile, File ruleFile) {
         Set<DLClause> dlClauses=new LinkedHashSet<DLClause>();
         Set<Atom> positiveFacts=new HashSet<Atom>();
-        for (OWLObjectPropertyExpression[] inclusion : axioms.m_simpleObjectPropertyInclusions) {
-            Atom subRoleAtom=getRoleAtom(inclusion[0],X,Y);
-            Atom superRoleAtom=getRoleAtom(inclusion[1],X,Y);
+        /* Quick fix (using Java reflexions) to access some fields that became private in later versions.
+         * TODO: find how to properly do this... don't be that guy!
+         */
+        Field f_simpleObjectPropertyInclusions;
+        Field f_conceptInclusions;
+        Field f_facts;
+        Collection<List<OWLObjectPropertyExpression>> m_simpleObjectPropertyInclusions;
+        Collection<List<OWLClassExpression>> m_conceptInclusions;
+        Collection<OWLIndividualAxiom> m_facts;
+        try {
+            f_simpleObjectPropertyInclusions = axioms.getClass().getDeclaredField("m_simpleObjectPropertyInclusions");
+            f_simpleObjectPropertyInclusions.setAccessible(true);
+            f_conceptInclusions = axioms.getClass().getDeclaredField("m_conceptInclusions");
+            f_conceptInclusions.setAccessible(true);
+            f_facts = axioms.getClass().getDeclaredField("m_facts");
+            f_facts.setAccessible(true);
+            m_simpleObjectPropertyInclusions = (Collection<List<OWLObjectPropertyExpression>>) f_simpleObjectPropertyInclusions.get(axioms);
+            m_conceptInclusions = (Collection<List<OWLClassExpression>>) f_conceptInclusions.get(axioms);
+            m_facts = (Collection<OWLIndividualAxiom>) f_facts.get(axioms);
+        } catch (java.lang.NoSuchFieldException e) {
+            return;
+        } catch (java.lang.IllegalAccessException e) {
+            return;
+        }
+
+        for (List<OWLObjectPropertyExpression> inclusion : m_simpleObjectPropertyInclusions) {
+            Atom subRoleAtom=getRoleAtom(inclusion.get(0),X,Y);
+            Atom superRoleAtom=getRoleAtom(inclusion.get(1),X,Y);
             DLClause dlClause=DLClause.create(new Atom[] { superRoleAtom },new Atom[] { subRoleAtom });
             dlClauses.add(dlClause);
         }
         NormalizedDatalogAxiomClausifier clausifier=new NormalizedDatalogAxiomClausifier(positiveFacts,factory);
-        for (OWLClassExpression[] inclusion : axioms.m_conceptInclusions) {
+        for (List<OWLClassExpression> inclusion : m_conceptInclusions) {
             for (OWLClassExpression description : inclusion)
                 description.accept(clausifier);
             for(DLClause dlClause :clausifier.getDLClause())
             	dlClauses.add(dlClause.getSafeVersion(AtomicConcept.THING));
         }
         DatalogFactClausifier factClausifier=new DatalogFactClausifier(positiveFacts);
-        for (OWLIndividualAxiom fact : axioms.m_facts)
+        for (OWLIndividualAxiom fact :  m_facts)
             fact.accept(factClausifier);
         writeDataFile(positiveFacts, dataFile);
         writeRules(dlClauses, ruleFile);

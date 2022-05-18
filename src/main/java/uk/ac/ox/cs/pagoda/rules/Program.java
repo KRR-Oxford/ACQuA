@@ -273,7 +273,7 @@ protected PredicateDependency dependencyGraph;
 		Utility.logInfo("The number of data property range axioms that are ignored: " + noOfDataPropertyRangeAxioms + "(" + noOfAxioms + ")");
 
         DLOntology dlOntology = (DLOntology) clausifier.preprocessAndClausify(filteredOntology, null)[1];
-        dlClauses = dlOntology.getDLClauses();
+        dlClauses = new HashSet<DLClause>(dlOntology.getDLClauses());
         positiveFacts = dlOntology.getPositiveFacts();
 	}
 

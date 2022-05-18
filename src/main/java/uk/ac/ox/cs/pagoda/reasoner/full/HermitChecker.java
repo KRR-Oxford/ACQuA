@@ -1,5 +1,6 @@
 package uk.ac.ox.cs.pagoda.reasoner.full;
 
+import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
 import org.semanticweb.HermiT.model.DLClause;
 import org.semanticweb.HermiT.model.Term;
@@ -57,7 +58,7 @@ public class HermitChecker extends Checker {
 //			record = other.record;
         }
 
-        hermit = new Reasoner(ontology);
+        hermit = new Reasoner(new Configuration(), ontology);
     }
 
     public HermitChecker(OWLOntology ontology, QueryRecord record, boolean toCheck) {
@@ -174,12 +175,12 @@ public class HermitChecker extends Checker {
             addTopAndBotTuple(topAxioms, botAxioms);
             manager.addAxioms(ontology, topAxioms);
             manager.addAxioms(ontology, botAxioms);
-            hermit = new Reasoner(ontology);
+            hermit = new Reasoner(new Configuration(), ontology);
             boolean topValid = true;
             if(!hermit.isConsistent() || topAnswerTuple != null && (topValid = check(topAnswerTuple))) {
                 hermit.dispose();
                 manager.removeAxioms(ontology, topAxioms);
-                hermit = new Reasoner(ontology);
+                hermit = new Reasoner(new Configuration(), ontology);
             }
             else {
                 if(!topValid) tag = -1;
@@ -187,7 +188,7 @@ public class HermitChecker extends Checker {
             }
         }
         else
-            hermit = new Reasoner(ontology);
+            hermit = new Reasoner(new Configuration(), ontology);
     }
 
     private void addTopAndBotTuple(Set<OWLAxiom> topAxioms, Set<OWLAxiom> botAxioms) {

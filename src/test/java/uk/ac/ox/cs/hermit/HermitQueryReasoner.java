@@ -1,5 +1,6 @@
 package uk.ac.ox.cs.hermit;
 
+import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
 import org.semanticweb.HermiT.model.Atom;
 import org.semanticweb.HermiT.model.AtomicRole;
@@ -75,7 +76,7 @@ public class HermitQueryReasoner {
 //			for (OWLAxiom axiom: o.getAxioms())
 //				System.out.println(axiom); 
 		
-		Reasoner hermit = new Reasoner(onto);
+		Reasoner hermit = new Reasoner(new Configuration(), onto);
 		if (!hermit.isConsistent()) {
 			System.out.println("The ontology is inconsistent."); 
 			return ; 
