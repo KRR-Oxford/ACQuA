@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Igne"
+  given-names: "Federico"
+  orcid: "https://orcid.org/0000-0002-2790-7513"
+- family-names: "Germano"
+  given-names: "Stefano"
+  orcid: "https://orcid.org/0000-0001-6993-0618"
+- family-names: "Horrocks"
+  given-names: "Ian"
+  orcid: "https://orcid.org/0000-0002-2685-7462"
+title: "ACQuA - A hybrid framework providing a CQ answering service for OWL"
+version: 0.2.1
+doi: 10.5281/zenodo.6564388
+date-released: 2022-05-19
+url: "https://github.com/KRR-Oxford/ACQuA"
