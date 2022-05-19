@@ -40,6 +40,13 @@ object Acqua extends App {
   val ontology = Ontology(ontopath, datapath).normalize(new Normalizer)
 
   val properties = new PagodaProperties()
+  /* TODO: find a better way to integrate CLI options from different
+   * tools. A good idea would be to have [[util.AcquaConfig]] handle the
+   * CLI and have methods to convert it into other "config" classes to
+   * use with tool-specific interfaces.
+   */
+  if (config contains 'pagodata)
+    properties setDataPath config('pagodata).get[String]
 
   val performMultiStages = true
   val considerEqualities = true

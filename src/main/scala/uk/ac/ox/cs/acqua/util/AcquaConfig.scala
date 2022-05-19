@@ -163,7 +163,7 @@ object AcquaConfig {
             os.walk(data).filter(os.isFile).toList
           }else
             exit(s"'${_data}' is not a valid path.")
-        parse(tail, config += ('data -> files))
+        parse(tail, config += ('data -> files) += ('pagodata -> _data))
       }
       case a => exit(s"Invalid sequence of arguments '${a.mkString(" ")}'.")
     }
@@ -201,6 +201,7 @@ object AcquaConfig {
       }
       case 'answers => Logger print s"Path to answers: ${v.get[os.Path]}"
       case 'transitive => Logger print s"Include property chain axioms: ${v.get[Boolean]}"
+      case _ => { }
     }}
   }
 }
