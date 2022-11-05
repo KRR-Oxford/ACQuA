@@ -4,7 +4,7 @@
 <h1 align="center">&middot; ACQuA &middot;</h1>
 
 <p align="center">
-A hybrid architecture for conjunctive query answering overover OWL 2 DL.
+A hybrid architecture for conjunctive query answering over OWL 2 DL.
 <br/>
 <a href="#">Read the thesis</a>
 &middot;
@@ -39,7 +39,7 @@ If the query can be fully answered by one of the tractable services, then that s
 Otherwise the tractable services are used to compute lower and upper bound approximations, taking the union of the lower bounds and the intersection of the upper bounds.
 If the bounds don’t coincide, then the “gap” answers are checked using the “full” service.
 
-This reference implementation combines [RSAComb], [PAGOdA], and [HermiT], but these tools can be potentially subtituted or augmented with more capable ones to improve the overall performance of the system.
+This reference implementation combines [RSAComb], [PAGOdA], and [HermiT], but these tools can be potentially substituted or augmented with more capable ones to improve the overall performance of the system.
 
 > *Disclaimer:* ACQuA is still in its preliminary stage of development and might contain bugs.
 
